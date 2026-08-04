@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>피클볼 — 기초부터 게임까지 | 수업나눔축제 김주현</title>
+<meta property="og:title" content="피클볼 — 기초부터 게임까지">
+<meta property="og:description" content="수업나눔축제 · 초보자도 가능한 피클볼 수업 15차시 설계와 스테이션 수업 나눔 (광평중 김주현)">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root{
+  --bg:#0F1923; --bg2:#162130; --card:#1E2D3D; --card2:#1A2535;
+  --line:#2A3F55; --line2:#243040;
+  --ink:#FFFFFF; --body:#B8C8D8; --muted:#8899AA;
+  --orange:#FF3D00; --amber:#FF9100; --cyan:#00E5FF; --green:#00C853;
+  --W:1280px; --H:720px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;background:#0F1923;touch-action:manipulation;font-family:"Pretendard Variable",Pretendard,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+body{display:flex;align-items:center;justify-content:center}
+
+/* ===== 스케일 무대 — 1280x720 고정 캔버스를 화면에 맞춰 스케일 ===== */
+#stage{position:fixed;left:50%;top:50%;width:var(--W);height:var(--H);transform-origin:center center;background:var(--bg)}
+.slide{
+  position:absolute;inset:0;width:var(--W);height:var(--H);
+  background:var(--bg);overflow:hidden;
+  opacity:0;visibility:hidden;pointer-events:none;
+  transform:scale(1.5);filter:blur(18px);
+  transition:opacity .6s cubic-bezier(.3,0,.2,1), transform .65s cubic-bezier(.3,0,.2,1), filter .6s cubic-bezier(.3,0,.2,1), visibility .65s;
+  padding:54px 64px;display:flex;flex-direction:column;
+}
+.slide.prev{transform:scale(.75);filter:blur(8px)}
+.slide.active{opacity:1;visibility:visible;pointer-events:auto;transform:scale(1);filter:blur(0)}
+
+/* ===== 등장 stagger — 자식에 data-r + style="--d:N" 붙이면 순서대로 페이드업 ===== */
+[data-r]{opacity:0;transform:translateY(22px);transition:opacity .6s cubic-bezier(.4,0,.2,1),transform .6s cubic-bezier(.4,0,.2,1)}
+.slide.active [data-r]{opacity:1;transform:none;transition-delay:calc(var(--d,0) * .07s + .12s)}
+
+/* ===== 공통 요소 ===== */
+.eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:14px;font-weight:700;letter-spacing:.12em;color:var(--muted);margin-bottom:14px}
+.tag{display:inline-block;background:var(--orange);color:#fff;font-size:13px;font-weight:800;letter-spacing:.1em;padding:5px 13px;border-radius:5px}
+.tag.cy{background:var(--cyan);color:#05202a}
+.s-title{font-size:42px;font-weight:800;color:var(--ink);line-height:1.15;letter-spacing:-.01em}
+.s-sub{font-size:20px;color:var(--muted);margin-top:10px;font-weight:500}
+.accent{color:var(--orange)}.amb{color:var(--amber)}.cy{color:var(--cyan)}.gr{color:var(--green)}
+.head-row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:26px}
+
+.grid{display:grid;gap:18px;flex:1;min-height:0}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;display:flex;flex-direction:column;position:relative}
+.card.soft{background:var(--card2)}
+.ic{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;background:rgba(255,61,0,.13);border:1px solid rgba(255,61,0,.3)}
+.ic.cy{background:rgba(0,229,255,.13);border-color:rgba(0,229,255,.3)}
+.ic.gr{background:rgba(0,200,83,.13);border-color:rgba(0,200,83,.3)}
+.ic.am{background:rgba(255,145,0,.13);border-color:rgba(255,145,0,.3)}
+.c-h{font-size:21px;font-weight:800;color:var(--ink);margin-bottom:8px}
+.c-d{font-size:20px;color:var(--body);line-height:1.62}
+.c-d.sm{font-size:18px}
+.num{font-size:40px;font-weight:800;color:var(--orange);line-height:1;font-family:"Pretendard Variable",sans-serif}
+
+ul.li{list-style:none;display:flex;flex-direction:column;gap:9px}
+ul.li li{font-size:19px;color:var(--body);line-height:1.45;padding-left:20px;position:relative}
+ul.li li::before{content:"·";position:absolute;left:4px;color:var(--orange);font-weight:800;font-size:18px;top:-2px}
+
+.foot{position:absolute;right:30px;bottom:20px;font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.03em}
+.pageno{position:absolute;left:30px;bottom:20px;font-size:12px;color:var(--muted);font-weight:700}
+
+/* ===== HUD (내비게이션 오버레이) ===== */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:50}
+#bar{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--orange),var(--amber));width:0;transition:width .5s cubic-bezier(.4,0,.2,1);box-shadow:0 0 12px rgba(255,61,0,.6);z-index:60}
+#count{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);font-family:Pretendard,sans-serif;font-size:13px;font-weight:700;color:var(--muted);background:rgba(15,25,35,.8);border:1px solid var(--line);padding:5px 14px;border-radius:20px;backdrop-filter:blur(8px);pointer-events:auto;z-index:60;cursor:pointer}
+#count b{color:var(--ink)}
+.nav{position:fixed;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;background:rgba(30,45,61,.7);border:1px solid var(--line);color:var(--body);font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;z-index:60;backdrop-filter:blur(8px);transition:.2s;opacity:0;}
+body:hover .nav{opacity:.55}
+.nav:hover{opacity:1!important;background:var(--orange);color:#fff;border-color:var(--orange)}
+#prev{left:18px}#next{right:18px}
+#hint{position:fixed;bottom:54px;left:50%;transform:translateX(-50%);font-size:12px;color:var(--muted);font-family:Pretendard,sans-serif;opacity:.7;transition:opacity .6s;z-index:60}
+#hint.hide{opacity:0}
+
+/* 섹션(파트) 슬라이드 */
+.part-hero{justify-content:center}
+.part-no{font-size:18px;font-weight:800;letter-spacing:.35em;color:var(--orange);margin-bottom:18px}
+.part-big{font-size:74px;font-weight:900;color:var(--ink);line-height:1.08;letter-spacing:-.02em}
+.part-line{font-size:16px;color:var(--muted);margin-top:24px;letter-spacing:.04em;font-weight:500}
+
+@media (prefers-reduced-motion: reduce){
+  .slide,[data-r]{transition-duration:.01ms!important}
+}
+
+/* ===== 오버뷰(목차 그리드) ===== */
+#ov{position:fixed;inset:0;background:rgba(5,8,12,.96);z-index:100;display:none;overflow-y:auto;padding:44px 28px 36px;backdrop-filter:blur(4px)}
+#ov.show{display:grid;grid-template-columns:repeat(auto-fill,minmax(216px,1fr));gap:14px;align-content:start}
+#ov::before{content:"목차 — 클릭해서 이동 · O 또는 ESC 닫기";position:fixed;top:13px;left:50%;transform:translateX(-50%);font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.02em}
+.ovcell{position:relative;width:100%;aspect-ratio:16/9;border-radius:9px;overflow:hidden;border:2px solid var(--line);cursor:pointer;background:var(--bg);transition:transform .15s,border-color .15s}
+.ovcell:hover{border-color:var(--orange);transform:scale(1.04);z-index:2}
+.ovcell.cur{border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,61,0,.4)}
+.ovcell .slide{position:absolute!important;top:0;left:0;transform-origin:top left;transition:none!important;animation:none!important;filter:none!important;opacity:1!important;visibility:visible!important;pointer-events:none}
+.ovcell .slide [data-r]{opacity:1!important;transform:none!important;transition:none!important}
+.ovnum{position:absolute;left:7px;bottom:6px;background:rgba(15,25,35,.85);color:#fff;font-size:11px;font-weight:800;padding:2px 8px;border-radius:10px;z-index:3}
+@keyframes ovIn{from{opacity:0;transform:scale(1.35);filter:blur(14px)}to{opacity:1;transform:scale(1);filter:blur(0)}}
+#ovbtn{position:fixed;right:16px;top:13px;font-size:13px;font-weight:700;color:var(--body);background:rgba(30,45,61,.82);border:1px solid var(--line);padding:7px 14px;border-radius:20px;cursor:pointer;pointer-events:auto;z-index:61;backdrop-filter:blur(8px);transition:.18s;user-select:none}
+#ovbtn:hover{background:var(--orange);color:#fff;border-color:var(--orange)}
+
+/* ===== 전체화면 버튼 + 토스트 (모바일 필수) ===== */
+#fsbtn{position:fixed;left:16px;top:calc(13px + env(safe-area-inset-top));font-size:13px;font-weight:700;color:var(--body);background:rgba(30,45,61,.82);border:1px solid var(--line);padding:7px 14px;border-radius:20px;cursor:pointer;pointer-events:auto;z-index:61;backdrop-filter:blur(8px);transition:.18s;user-select:none;display:flex;align-items:center;gap:5px}
+#fsbtn:hover{border-color:var(--amber);color:var(--ink)}
+#fsbtn:active{transform:scale(.95)}
+#toast{position:fixed;left:50%;bottom:calc(70px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(12px);max-width:min(92vw,470px);background:rgba(15,25,35,.97);border:1px solid var(--line);color:var(--body);font-size:13px;line-height:1.55;font-weight:600;padding:13px 18px;border-radius:14px;backdrop-filter:blur(8px);box-shadow:0 12px 34px rgba(0,0,0,.55);z-index:120;opacity:0;visibility:hidden;transition:opacity .3s,transform .3s;text-align:center;pointer-events:none}
+#toast.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+#toast b{color:var(--amber);font-weight:800}
+.intro-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+
+/* 칩 */
+.chip{background:rgba(255,61,0,.1);border:1px solid rgba(255,61,0,.32);color:var(--amber);font-size:14px;font-weight:700;padding:8px 16px;border-radius:20px}
+/* 비교표 */
+.ctable{flex:1;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--card)}
+.ct-h,.ct-r{display:grid;grid-template-columns:.8fr 1.4fr 1.4fr}
+.ct-h{background:var(--bg2);font-weight:800;font-size:18px}
+.ct-h>div{padding:14px 18px}
+.cyan-h{color:var(--cyan)}.orange-h{color:var(--orange)}
+.ct-r{border-top:1px solid var(--line)}
+.ct-r>div{padding:13px 18px;font-size:18.5px;color:var(--body);line-height:1.4}
+.ct-k{font-weight:700;color:var(--muted);background:rgba(255,255,255,.02)}
+.dim{color:var(--muted);font-size:15px}
+/* 팁/경고 */
+.tip{margin-top:16px;background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.25);border-radius:12px;padding:14px 18px;font-size:18.5px;color:var(--cyan);font-weight:600}
+.warn{background:rgba(255,61,0,.1);border:1px solid rgba(255,61,0,.3);border-radius:10px;padding:11px 14px;font-size:13px;color:#ffb4a0;margin-top:14px}
+/* 배지 */
+.badge{position:absolute;top:-11px;left:20px;background:var(--orange);color:#fff;font-size:12px;font-weight:800;padding:4px 11px;border-radius:6px}
+.badge.soft{background:var(--line);color:var(--body)}
+/* 인용/예시 */
+.quote{font-size:19px;color:var(--body);line-height:1.5;background:var(--card2);border-radius:10px;padding:12px 14px;margin-top:14px}
+.dep{font-size:15px;color:var(--muted);margin-top:10px;border-top:1px solid var(--line);padding-top:10px;line-height:1.4}
+/* 흐름도 */
+.flow{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:28px}
+.fnode{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 16px;text-align:center;min-width:130px}
+.fnode b{display:block;font-size:16px;color:var(--ink);font-weight:800}
+.fnode span{font-size:12px;color:var(--muted)}
+.farrow{color:var(--orange);font-size:20px}
+/* 카테고리 번호 */
+.catnum{font-size:30px;font-weight:900;color:var(--orange);line-height:1}
+/* 용어사전(2단 정의 목록) */
+.gloss{display:grid;grid-template-columns:1fr 1fr;gap:11px 22px;flex:1;align-content:start}
+.gi{display:flex;flex-direction:column;gap:3px;padding:11px 0;border-bottom:1px solid var(--line2)}
+.gi b{font-size:19.5px;color:var(--ink);font-weight:800}
+.gi b i{color:var(--amber);font-weight:600;font-style:normal;font-size:15.5px;margin-left:6px}
+.gi span{font-size:17px;color:var(--muted);line-height:1.45}
+
+/* ===== 모바일 최적화 ===== */
+@media (hover:none){
+  .nav{opacity:.5}
+  #prev{left:8px}#next{right:8px}
+}
+@media (max-width:640px){
+  .nav{width:40px;height:40px;font-size:18px}
+  #ovbtn{padding:6px 11px;font-size:12px}
+  #fsbtn{padding:6px 10px;font-size:14px;left:max(10px,env(safe-area-inset-left));top:max(10px,env(safe-area-inset-top))}
+  #fsbtn .fslabel{display:none}
+  #count{bottom:max(10px,env(safe-area-inset-bottom));font-size:12px;padding:4px 11px}
+  #hint{bottom:46px;font-size:11px;padding:0 16px;text-align:center;width:100%}
+  #ov{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))!important}
+}
+/* 세로 모드 → 가로 회전 안내 (CSS 전용, 6.5초 후 자동 숨김) */
+#rotate{display:none}
+@media (orientation:portrait) and (hover:none){
+  #rotate{
+    display:flex;align-items:center;gap:8px;
+    position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top));transform:translateX(-50%);
+    z-index:80;background:rgba(15,25,35,.93);border:1px solid var(--line);
+    color:var(--body);font-size:12.5px;font-weight:600;
+    padding:9px 16px;border-radius:22px;backdrop-filter:blur(8px);
+    box-shadow:0 6px 20px rgba(0,0,0,.45);white-space:nowrap;
+    animation:rotateHint 6.5s ease forwards;pointer-events:none;
+  }
+  #rotate b{color:var(--amber);font-weight:800}
+}
+@keyframes rotateHint{0%,72%{opacity:1;visibility:visible}100%{opacity:0;visibility:hidden}}
+</style>
+<style>
+/* 이 덱 전용 보조 클래스 (위 기본 스타일은 손대지 않고 추가만 함) */
+.plan .ct-h>div{padding:10px 16px;font-size:16px}
+.plan .ct-r{flex:1;align-items:center}
+.plan .ct-r>div{padding:9px 16px;font-size:16.5px;line-height:1.4}
+.plan .ct-n{font-weight:800;color:var(--amber);text-align:center;font-size:19px!important;background:rgba(255,255,255,.02)}
+.plan .ct-s{font-weight:700;color:var(--ink)}
+.plan .ct-c{color:var(--muted);font-size:15px!important;line-height:1.42}
+.plan .hl{background:rgba(255,61,0,.1)}
+.plan .hl .ct-n{color:var(--orange)}
+.sub{display:block;color:var(--muted);font-size:14.5px;margin-top:3px}
+.model{display:inline-block;background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.26);color:var(--cyan);font-size:13px;font-weight:700;padding:2px 8px;border-radius:5px;margin-top:5px}
+.stn{border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:22px 16px;border:1px solid var(--line);background:var(--card);position:relative}
+.stn .sl{position:absolute;top:14px;left:18px;font-size:13px;font-weight:800;letter-spacing:.1em;color:var(--muted)}
+.stn .sn{font-size:26px;font-weight:900;color:var(--ink);margin-bottom:10px}
+.stn .sd{font-size:17px;color:var(--body);line-height:1.5}
+.stn .sg{margin-top:14px;font-size:32px;font-weight:900;line-height:1.1}
+.stn .sq{margin-top:10px;font-size:14px;font-weight:800;letter-spacing:.06em;padding:4px 12px;border-radius:14px}
+.stn .circ{width:132px;height:132px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:20px;font-weight:900;line-height:1}
+.stn .circ .cb{font-size:52px}
+.stn .circ .cs{font-size:14px;font-weight:800;letter-spacing:.12em;margin-top:7px;opacity:.72}
+/* 코트 도식 */
+.court{position:relative;width:100%;aspect-ratio:2.2/1;border:3px solid rgba(0,229,255,.55);border-radius:5px;background:rgba(255,255,255,.025)}
+.court .nvz{position:absolute;top:0;bottom:0;width:15.7%;background:rgba(255,145,0,.34);border:1px dashed rgba(255,145,0,.6);border-top:0;border-bottom:0}
+.court .cline{position:absolute;top:50%;height:2px;background:rgba(0,229,255,.4)}
+.court .net{position:absolute;left:50%;top:-14px;bottom:-14px;width:4px;background:var(--ink);transform:translateX(-50%);border-radius:2px}
+.court .clab{position:absolute;font-size:13px;font-weight:800;color:var(--body);white-space:nowrap}
+.court .clab.nv{color:var(--amber)}
+/* 기술 라벨 */
+.skl{display:inline-block;font-size:13px;font-weight:800;letter-spacing:.1em;padding:4px 12px;border-radius:6px;background:rgba(255,61,0,.14);color:var(--orange);align-self:flex-start}
+.skl.am{background:rgba(255,145,0,.14);color:var(--amber)}
+.skl.cy{background:rgba(0,229,255,.14);color:var(--cyan)}
+.skl.gr{background:rgba(0,200,83,.14);color:var(--green)}
+/* 스킬챌린지 레벨 카드 */
+.card.lv{padding:18px 20px;justify-content:center}
+.lvno{font-size:15px;font-weight:900;letter-spacing:.08em;margin-bottom:9px}
+.lvno.am{color:var(--amber)}.lvno.or{color:var(--orange)}.lvno.cy{color:var(--cyan)}.lvno.gr{color:var(--green)}
+.lvgoal{margin-top:12px;font-size:25px;font-weight:900;letter-spacing:-.01em}
+.lvgoal.am{color:var(--amber)}.lvgoal.or{color:var(--orange)}.lvgoal.cy{color:var(--cyan)}.lvgoal.gr{color:var(--green)}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="stage">
+
+<!-- 1 표지 -->
+<section class="slide" data-bg style="background:radial-gradient(120% 90% at 78% 18%, #1a2c3f 0%, #0F1923 55%);">
+  <div style="position:absolute;top:-120px;right:-120px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(255,61,0,.22),transparent 65%);filter:blur(8px)"></div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
+    <div data-r style="--d:0" class="eyebrow"><span class="tag">수업나눔축제</span></div>
+    <h1 data-r style="--d:1;font-size:62px;font-weight:900;color:var(--ink);line-height:1.12;letter-spacing:-.02em">
+      피클볼<br><span class="accent">기초부터 게임까지</span></h1>
+    <p data-r style="--d:2;font-size:22px;color:var(--body);margin-top:26px;font-weight:600">초보자도 가능한 피클볼 수업 &nbsp;|&nbsp; <span class="amb">광평중 김주현</span></p>
+    <div data-r style="--d:3;display:flex;gap:10px;margin-top:34px;flex-wrap:wrap">
+      <span class="chip">15차시 단원 설계</span><span class="chip">스테이션 수업</span><span class="chip">미니게임</span>
+    </div>
+  </div>
+  <div class="foot">광평중 김주현</div>
+</section>
+
+<!-- 2 INDEX -->
+<section class="slide">
+  <div class="head-row" style="margin-bottom:20px"><div><div data-r style="--d:0" class="eyebrow"><span class="tag">INDEX</span></div><h2 data-r style="--d:1" class="s-title">오늘의 순서</h2></div>
+    <div data-r style="--d:1" class="s-sub" style="margin:0;font-size:17px">6개 파트 · 단원 설계부터 평가까지</div>
+  </div>
+  <div class="grid g3" style="gap:15px">
+    <div class="card" data-r style="--d:2;padding:20px 24px;flex-direction:row;align-items:center;gap:18px"><div class="num" style="font-size:34px;flex-shrink:0;width:52px">01</div><div><div class="c-h" style="font-size:20px;margin-bottom:3px">왜 피클볼인가</div><div class="c-d sm" style="color:var(--muted);font-size:16px">종목 선택 이유 · 코트와 기본 규칙</div></div></div>
+    <div class="card" data-r style="--d:3;padding:20px 24px;flex-direction:row;align-items:center;gap:18px"><div class="num" style="font-size:34px;flex-shrink:0;width:52px;color:var(--amber)">02</div><div><div class="c-h" style="font-size:20px;margin-bottom:3px">단원 설계</div><div class="c-d sm" style="color:var(--muted);font-size:16px">학습 목표와 15차시 지도 계획</div></div></div>
+    <div class="card" data-r style="--d:4;padding:20px 24px;flex-direction:row;align-items:center;gap:18px"><div class="num" style="font-size:34px;flex-shrink:0;width:52px;color:var(--green)">03</div><div><div class="c-h" style="font-size:20px;margin-bottom:3px">기술 지도</div><div class="c-d sm" style="color:var(--muted);font-size:16px">필수 지도 내용과 오류 교정</div></div></div>
+    <div class="card" data-r style="--d:5;padding:20px 24px;flex-direction:row;align-items:center;gap:18px"><div class="num" style="font-size:34px;flex-shrink:0;width:52px;color:var(--cyan)">04</div><div><div class="c-h" style="font-size:20px;margin-bottom:3px">본시 수업</div><div class="c-d sm" style="color:var(--muted);font-size:16px">스테이션 순환과 미니게임</div></div></div>
+    <div class="card" data-r style="--d:6;padding:20px 24px;flex-direction:row;align-items:center;gap:18px"><div class="num" style="font-size:34px;flex-shrink:0;width:52px">05</div><div><div class="c-h" style="font-size:20px;margin-bottom:3px">스킬챌린지</div><div class="c-d sm" style="color:var(--muted);font-size:16px">6단계 도전 과제와 평가 기준</div></div></div>
+    <div class="card" data-r style="--d:7;padding:20px 24px;flex-direction:row;align-items:center;gap:18px"><div class="num" style="font-size:34px;flex-shrink:0;width:52px;color:var(--green)">06</div><div><div class="c-h" style="font-size:20px;margin-bottom:3px">수업 정리</div><div class="c-d sm" style="color:var(--muted);font-size:16px">운영 결과와 용어 정리</div></div></div>
+  </div>
+  <div class="foot">광평중 김주현</div><div class="pageno">02</div>
+</section>
+
+<!-- 3 PART 01 -->
+<section class="slide part-hero" style="background:radial-gradient(120% 100% at 20% 50%, #1a2c3f 0%, #0F1923 60%)">
+  <div data-r style="--d:0" class="part-no">PART 01</div>
+  <div data-r style="--d:1" class="part-big">왜<br><span style="margin-left:1.2em" class="accent">피클볼인가</span></div>
+  <div data-r style="--d:2" class="part-line">체력 수준이 제각각인 한 반에서, 모두가 첫 시간부터 랠리를 주고받을 수 있는 종목</div>
+</section>
+
+<!-- 4 피클볼 수업의 이유 -->
+
+<section class="slide">
+  <div class="head-row" style="margin-bottom:20px">
+    <div><div data-r style="--d:0" class="eyebrow"><span class="tag">PART 01</span></div>
+    <h2 data-r style="--d:1" class="s-title">피클볼 수업의 <span class="accent">이유</span></h2></div>
+  </div>
+  <div class="grid g2" style="gap:15px">
+    <div class="card" data-r style="--d:2;padding:20px 24px;flex-direction:row;align-items:center;gap:20px"><div class="num" style="font-size:34px;flex-shrink:0;width:52px">01</div><div class="c-d sm" style="line-height:1.5">다양한 <b style="color:var(--ink)">체력 수준의 학생</b>이 함께 참여할 수 있다</div></div>
+    <div class="card" data-r style="--d:3;padding:20px 24px;flex-direction:row;align-items:center;gap:20px"><div class="num" style="font-size:34px;flex-shrink:0;width:52px;color:var(--amber)">02</div><div class="c-d sm" style="line-height:1.5">라켓 스포츠의 <b style="color:var(--ink)">기본 기술</b>을 자연스럽게 익힐 수 있다</div></div>
+    <div class="card" data-r style="--d:4;padding:20px 24px;flex-direction:row;align-items:center;gap:20px"><div class="num" style="font-size:34px;flex-shrink:0;width:52px;color:var(--cyan)">03</div><div class="c-d sm" style="line-height:1.5"><b style="color:var(--ink)">체력 증진과 활동량</b> 확보에 도움이 될 수 있다</div></div>
+    <div class="card" data-r style="--d:5;padding:20px 24px;flex-direction:row;align-items:center;gap:20px"><div class="num" style="font-size:34px;flex-shrink:0;width:52px;color:var(--green)">04</div><div class="c-d sm" style="line-height:1.5"><b style="color:var(--ink)">협동심과 전략적 사고</b>를 기를 수 있다</div></div>
+    <div class="card" data-r style="--d:6;padding:20px 24px;flex-direction:row;align-items:center;gap:20px"><div class="num" style="font-size:34px;flex-shrink:0;width:52px">05</div><div class="c-d sm" style="line-height:1.5">학생의 <b style="color:var(--ink)">흥미를 유도</b>하고 적극적인 참여를 끌어낼 수 있다</div></div>
+    <div class="card soft" data-r style="--d:7;padding:20px 22px;justify-content:center;border-style:dashed;border-color:rgba(255,145,0,.35)"><div style="font-size:19px;font-weight:800;color:var(--amber);line-height:1.5">그래서<br>“초보자도 가능한”<br>수업이 됩니다</div></div>
+  </div>
+  <div class="foot">광평중 김주현</div><div class="pageno">04</div>
+</section>
+
+<!-- 피클볼 한눈에 -->
+<section class="slide">
+  <div class="head-row" style="margin-bottom:20px">
+    <div><div data-r style="--d:0" class="eyebrow"><span class="tag">PART 01</span></div>
+    <h2 data-r style="--d:1" class="s-title">피클볼 <span class="accent">한눈에</span></h2></div>
+    <div data-r style="--d:1" class="s-sub" style="margin:0;font-size:17px">배드민턴 코트 크기에서 탁구 라켓처럼</div>
+  </div>
+  <div style="flex:1;min-height:0;display:grid;grid-template-columns:1.35fr 1fr;gap:24px">
+    <div data-r style="--d:2;display:flex;flex-direction:column;justify-content:center">
+      <div class="court">
+        <div class="nvz" style="left:34.3%"></div>
+        <div class="nvz" style="right:34.3%"></div>
+        <div class="cline" style="left:0;width:34.3%"></div>
+        <div class="cline" style="right:0;width:34.3%"></div>
+        <div class="net"></div>
+        <div class="clab" style="left:50%;transform:translateX(-50%);top:-30px">네트 0.86m</div>
+        <div class="clab nv" style="left:50%;transform:translateX(-50%);bottom:-30px">논발리존 각 2.1m</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:14px;font-size:15px;color:var(--muted);font-weight:600">
+        <span>← 길이 13.4m →</span><span>↕ 너비 6.1m</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;justify-content:center">
+      <div class="card" data-r style="--d:3;flex-direction:row;align-items:center;gap:16px;padding:15px 20px"><div class="ic cy">📐</div><div><div class="c-h" style="font-size:19px;margin-bottom:2px">코트 13.4m × 6.1m</div><div class="c-d sm" style="color:var(--muted);font-size:15.5px">복식 배드민턴 코트와 거의 같다</div></div></div>
+      <div class="card" data-r style="--d:4;flex-direction:row;align-items:center;gap:16px;padding:15px 20px"><div class="ic am">🥅</div><div><div class="c-h" style="font-size:19px;margin-bottom:2px">네트 중앙 0.86m</div><div class="c-d sm" style="color:var(--muted);font-size:15.5px">테니스보다 낮아 초보도 넘기기 쉽다</div></div></div>
+      <div class="card" data-r style="--d:5;flex-direction:row;align-items:center;gap:16px;padding:15px 20px"><div class="ic">🚫</div><div><div class="c-h" style="font-size:19px;margin-bottom:2px">논발리존 2.1m</div><div class="c-d sm" style="color:var(--muted);font-size:15.5px">'키친' — 이 안에서는 발리 금지</div></div></div>
+      <div class="card" data-r style="--d:6;flex-direction:row;align-items:center;gap:16px;padding:15px 20px"><div class="ic gr">🏓</div><div><div class="c-h" style="font-size:19px;margin-bottom:2px">패들 + 구멍 뚫린 공</div><div class="c-d sm" style="color:var(--muted);font-size:15.5px">줄 없는 판 형태 · 공이 느려 랠리가 길다</div></div></div>
+    </div>
+  </div>
+  <div class="foot">광평중 김주현</div><div class="pageno">05</div>
+</section>
+
+<!-- 꼭 알아야 할 기본 규칙 -->
+<section class="slide">
+  <div class="head-row" style="margin-bottom:20px">
+    <div><div data-r style="--d:0" class="eyebrow"><span class="tag">PART 01</span></div>
+    <h2 data-r style="--d:1" class="s-title">꼭 알아야 할 <span class="accent">기본 규칙</span></h2></div>
+    <div data-r style="--d:1" class="s-sub" style="margin:0;font-size:17px">1차시에 이것만 확실히</div>
+  </div>
+  <div class="grid g2" style="gap:15px">
+    <div class="card" data-r style="--d:2;padding:20px 24px;justify-content:center"><div style="display:flex;align-items:center;gap:14px;margin-bottom:9px"><div class="ic am" style="width:38px;height:38px;font-size:18px">1</div><div class="c-h" style="font-size:20px;margin:0">서브는 언더핸드만</div></div>
+      <ul class="li" style="gap:5px"><li style="font-size:17px">배꼽 아래에서 위로 올려 치기 <span class="dim">(오버핸드 금지)</span></li><li style="font-size:17px">한 발은 엔드라인 뒤 · 대각선 코트로 · 기회는 1번</li></ul></div>
+    <div class="card" data-r style="--d:3;padding:20px 24px;justify-content:center;border-color:rgba(255,61,0,.42);background:rgba(255,61,0,.06)"><div style="display:flex;align-items:center;gap:14px;margin-bottom:9px"><div class="ic" style="width:38px;height:38px;font-size:18px">2</div><div class="c-h" style="font-size:20px;margin:0">투바운드 룰 <span class="dim" style="font-size:14px">가장 중요</span></div></div>
+      <ul class="li" style="gap:5px"><li style="font-size:17px">서브 1회 바운드 → 리턴 1회 바운드 <b style="color:var(--ink)">두 번은 필수</b></li><li style="font-size:17px">그 다음부터 발리(공중 치기) 가능</li></ul></div>
+    <div class="card" data-r style="--d:4;padding:20px 24px;justify-content:center"><div style="display:flex;align-items:center;gap:14px;margin-bottom:9px"><div class="ic cy" style="width:38px;height:38px;font-size:18px">3</div><div class="c-h" style="font-size:20px;margin:0">논발리존(키친)</div></div>
+      <ul class="li" style="gap:5px"><li style="font-size:17px">네트 양쪽 2.1m 안에서는 발리 금지</li><li style="font-size:17px"><b style="color:var(--ink)">라인을 밟아도 반칙</b> · 바운드된 공은 쳐도 된다</li></ul></div>
+    <div class="card" data-r style="--d:5;padding:20px 24px;justify-content:center"><div style="display:flex;align-items:center;gap:14px;margin-bottom:9px"><div class="ic gr" style="width:38px;height:38px;font-size:18px">4</div><div class="c-h" style="font-size:20px;margin:0">득점</div></div>
+      <ul class="li" style="gap:5px"><li style="font-size:17px">공식은 11점 2점차 <span class="dim">(서브팀만 득점)</span></li><li style="font-size:17px">수업에서는 <b style="color:var(--ink)">15점 랠리포인트제</b>로 단순화</li></ul></div>
+  </div>
+  <div class="warn" data-r style="--d:6;font-size:16.5px;padding:13px 18px;margin-top:15px">⚠️ 반칙 — 네트 터치 · 아웃 · 서브 실패 · 투바운드 위반 · 키친 안에서 발리</div>
+  <div class="foot">광평중 김주현</div><div class="pageno">06</div>
+</section>
+
+
+<!-- 5 PART 02 -->
+<section class="slide part-hero" style="background:radial-gradient(120% 100% at 20% 50%, #2a2410 0%, #0F1923 60%)">
+  <div data-r style="--d:0" class="part-no" style="color:var(--amber)">PART 02</div>
+  <div data-r style="--d:1" class="part-big">단원<br><span style="margin-left:1.2em" class="amb">설계</span></div>
+  <div data-r style="--d:2" class="part-line">체(體)·인(仁)·지(知) 학습 목표와 15차시 지도 계획</div>
+</section>
+
+<!-- 6 단원 학습 목표 -->
+<section class="slide" style="background:radial-gradient(120% 90% at 82% 12%, #2a2410 0%, #0F1923 55%)">
+  <div class="head-row" style="margin-bottom:18px">
+    <div>
+      <div data-r style="--d:0" class="eyebrow"><span class="tag" style="background:var(--amber);color:#241800">PART 02</span></div>
+      <h2 data-r style="--d:1" class="s-title">단원 <span class="amb">학습 목표</span></h2>
+    </div>
+  </div>
+  <div data-r style="--d:2;display:flex;gap:22px;align-items:center;background:rgba(255,145,0,.08);border:1px solid rgba(255,145,0,.42);border-radius:16px;padding:18px 26px;margin-bottom:16px;flex-shrink:0">
+    <div style="flex-shrink:0;font-size:14px;font-weight:800;letter-spacing:.14em;color:var(--amber)">핵심 기준</div>
+    <div style="font-size:19px;line-height:1.55;color:var(--body)">기술을 정확히 수행하고, 친구와 협력하며, 규칙과 전략을 이해해 설명할 수 있다.</div>
+  </div>
+  <div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:12px">
+    <div class="card" data-r style="--d:3;flex:1;flex-direction:row;align-items:center;gap:22px;padding:14px 24px;border-color:rgba(255,61,0,.45);background:rgba(255,61,0,.06)">
+      <div style="flex-shrink:0;width:74px;text-align:center;font-size:28px;font-weight:900;color:var(--orange);line-height:1.2">체<br><span style="font-size:15px;letter-spacing:.05em">體</span></div>
+      <ul class="li" style="gap:5px"><li>기본적인 피클볼 기술을 정확한 자세로 수행할 수 있다.</li><li>경기 기능을 적절히 활용하여 실제 경기 상황에서 효과적으로 수행할 수 있다.</li></ul>
+    </div>
+    <div class="card" data-r style="--d:4;flex:1;flex-direction:row;align-items:center;gap:22px;padding:14px 24px;border-color:rgba(255,145,0,.4)">
+      <div style="flex-shrink:0;width:74px;text-align:center;font-size:28px;font-weight:900;color:var(--amber);line-height:1.2">인<br><span style="font-size:15px;letter-spacing:.05em">仁</span></div>
+      <ul class="li" style="gap:5px"><li>친구와 협력하며 스포츠맨십을 실천할 수 있다.</li><li>꾸준한 기능 숙달의 과정을 통해 인내심과 끈기를 키울 수 있다.</li></ul>
+    </div>
+    <div class="card" data-r style="--d:5;flex:1;flex-direction:row;align-items:center;gap:22px;padding:14px 24px;border-color:rgba(0,229,255,.36)">
+      <div style="flex-shrink:0;width:74px;text-align:center;font-size:28px;font-weight:900;color:var(--cyan);line-height:1.2">지<br><span style="font-size:15px;letter-spacing:.05em">知</span></div>
+      <ul class="li" style="gap:5px"><li>피클볼의 기본 규칙과 전략을 이해하고 설명할 수 있다.</li><li>다른 네트형 종목과 구별된 전술을 이해하고 종목의 특성을 설명할 수 있다.</li></ul>
+    </div>
+  </div>
+  <div class="foot">광평중 김주현</div>
+</section>
+
+<!-- 7 단원 지도 계획 1~5차시 -->
+<section class="slide plan">
+  <div class="head-row" style="margin-bottom:18px">
+    <div><div data-r style="--d:0" class="eyebrow"><span class="tag" style="background:var(--amber);color:#241800">PART 02</span></div>
+    <h2 data-r style="--d:1" class="s-title">단원 지도 계획 <span class="amb">1~5차시</span></h2></div>
+    <div data-r style="--d:1" class="s-sub" style="margin:0;font-size:17px">전체 15차시 · 도입과 기본 기능</div>
+  </div>
+  <div class="ctable" data-r style="--d:2">
+    <div class="ct-h" style="grid-template-columns:70px 1.25fr 2.7fr 1.15fr"><div style="text-align:center">차시</div><div>주제</div><div class="orange-h">주요 학습 내용</div><div class="cyan-h">교과 역량</div></div>
+    <div class="ct-r" style="grid-template-columns:70px 1.25fr 2.7fr 1.15fr"><div class="ct-n">1</div><div class="ct-s">피클볼 소개 및<br>규칙 이해하기</div><div>피클볼 소개하기<span class="sub">역사와 유래 · 종목의 주요 특성 · 동영상 자료 시청 및 설명·질문 활용 수업</span></div><div class="ct-c">지식정보처리</div></div>
+    <div class="ct-r" style="grid-template-columns:70px 1.25fr 2.7fr 1.15fr"><div class="ct-n">2</div><div class="ct-s">라켓과 공에<br>익숙해지기</div><div>피클볼 경험하기 <span style="color:var(--muted);font-size:15px">(친밀감 형성)</span><span class="sub">배우기 전 직접 경험하기 · 흥미 요소 느끼기 · 배움의 필요성 깨닫기</span></div><div class="ct-c">지식정보처리<br>의사소통</div></div>
+    <div class="ct-r" style="grid-template-columns:70px 1.25fr 2.7fr 1.15fr"><div class="ct-n">3</div><div class="ct-s">기본 스트로크<br>익히기 1</div><div>기본 기능 연습하기<span class="sub">그립법 · 패들로 공 다루기 · 2:2, 3:3 공 다루기 게임</span><span class="model">직접교수 모형</span></div><div class="ct-c">자기관리<br>지식정보처리</div></div>
+    <div class="ct-r" style="grid-template-columns:70px 1.25fr 2.7fr 1.15fr"><div class="ct-n">4</div><div class="ct-s">기본 스트로크<br>익히기 2</div><div>기본 기능 연습하기 2<span class="sub">딩크 익히기 · 패들로 공 다루기 · 1:1 딩크, 네트, 벽치기</span><span class="model">협동학습 모형</span></div><div class="ct-c">자기관리<br>지식정보처리<br>공동체</div></div>
+    <div class="ct-r" style="grid-template-columns:70px 1.25fr 2.7fr 1.15fr"><div class="ct-n">5</div><div class="ct-s">기본 스트로크<br>익히기 3</div><div>기본 기능 연습하기 3<span class="sub">포핸드 스트로크 및 반복 연습</span><span class="model">협동학습 모형</span></div><div class="ct-c">자기관리<br>공동체</div></div>
+  </div>
+  <div class="foot">광평중 김주현</div><div class="pageno">09</div>
+</section>
+
+<!-- 8 단원 지도 계획 6~10차시 -->
+<section class="slide plan">
+  <div class="head-row" style="margin-bottom:18px">
+    <div><div data-r style="--d:0" class="eyebrow"><span class="tag" style="background:var(--amber);color:#241800">PART 02</span></div>
+    <h2 data-r style="--d:1" class="s-title">단원 지도 계획 <span class="amb">6~10차시</span></h2></div>
+    <div data-r style="--d:1" class="s-sub" style="margin:0;font-size:17px">기능 심화 · 서브 · 첫 경기</div>
+  </div>
+  <div class="ctable" data-r style="--d:2">
+    <div class="ct-h" style="grid-template-columns:70px 1.25fr 2.7fr 1.15fr"><div style="text-align:center">차시</div><div>주제</div><div class="orange-h">주요 학습 내용</div><div class="cyan-h">교과 역량</div></div>
+    <div class="ct-r" style="grid-template-columns:70px 1.25fr 2.7fr 1.15fr"><div class="ct-n">6</div><div class="ct-s">기본 스트로크<br>익히기 4</div><div>기본 기능 연습하기 4<span class="sub">포핸드 / 백핸드 스트로크 및 반복 연습</span><span class="model">협동학습 모형</span></div><div class="ct-c">자기관리<br>의사소통<br>공동체</div></div>
+    <div class="ct-r" style="grid-template-columns:70px 1.25fr 2.7fr 1.15fr"><div class="ct-n">7</div><div class="ct-s">기본 스트로크<br>익히기 5</div><div>기본 기능 연습하기 5<span class="sub">네트 근처에서의 발리 연습</span><span class="model">동료교수 모형</span></div><div class="ct-c">자기관리<br>의사소통<br>공동체</div></div>
+    <div class="ct-r" style="grid-template-columns:70px 1.25fr 2.7fr 1.15fr"><div class="ct-n">8</div><div class="ct-s">서브 1</div><div>서브 연습<span class="sub">효과적인 리시브 방법 생각하기</span><span class="model">동료교수 모형</span></div><div class="ct-c">자기관리<br>의사소통<br>공동체</div></div>
+    <div class="ct-r" style="grid-template-columns:70px 1.25fr 2.7fr 1.15fr"><div class="ct-n">9</div><div class="ct-s">서브 2</div><div>서브 연습<span class="sub">투바운드 규칙 적용, 리시브 연습 · 효과적인 리시브 방법 생각하기</span><span class="model">동료교수 모형</span></div><div class="ct-c">자기관리<br>의사소통<br>공동체</div></div>
+    <div class="ct-r" style="grid-template-columns:70px 1.25fr 2.7fr 1.15fr"><div class="ct-n">10</div><div class="ct-s">피클볼 게임 1</div><div>피클볼 게임 및 리그전<span class="sub">게임상황평가</span><span class="model">전술게임 모형</span></div><div class="ct-c">의사소통<br>공동체</div></div>
+  </div>
+  <div class="foot">광평중 김주현</div><div class="pageno">10</div>
+</section>
+
+<!-- 9 단원 지도 계획 11~15차시 -->
+<section class="slide plan">
+  <div class="head-row" style="margin-bottom:18px">
+    <div><div data-r style="--d:0" class="eyebrow"><span class="tag" style="background:var(--amber);color:#241800">PART 02</span></div>
+    <h2 data-r style="--d:1" class="s-title">단원 지도 계획 <span class="amb">11~15차시</span></h2></div>
+    <div data-r style="--d:1" class="s-sub" style="margin:0;font-size:17px"><span class="accent">12차시</span>가 오늘 나누는 본시 수업</div>
+  </div>
+  <div class="ctable" data-r style="--d:2">
+    <div class="ct-h" style="grid-template-columns:70px 1.25fr 2.7fr 1.15fr"><div style="text-align:center">차시</div><div>주제</div><div class="orange-h">주요 학습 내용</div><div class="cyan-h">교과 역량</div></div>
+    <div class="ct-r" style="grid-template-columns:70px 1.25fr 2.7fr 1.15fr"><div class="ct-n">11</div><div class="ct-s">피클볼 게임 2</div><div>피클볼 게임 및 리그전<span class="sub">게임상황평가</span><span class="model">전술게임 모형</span></div><div class="ct-c">의사소통<br>공동체</div></div>
+    <div class="ct-r hl" style="grid-template-columns:70px 1.25fr 2.7fr 1.15fr"><div class="ct-n">12</div><div class="ct-s" style="color:var(--orange)">피클볼 스테이션<br>수업 · 미니게임</div><div>스테이션 수업 및 미니게임<span class="sub">벽치기 · 컨트롤 · 발리 · 딩크 4가지 · 배운 기술을 적용한 미니게임</span></div><div class="ct-c">자기관리<br>의사소통<br>공동체</div></div>
+    <div class="ct-r" style="grid-template-columns:70px 1.25fr 2.7fr 1.15fr"><div class="ct-n">13</div><div class="ct-s">수행평가</div><div>피클볼 스킬챌린지</div><div class="ct-c">자기관리</div></div>
+    <div class="ct-r" style="grid-template-columns:70px 1.25fr 2.7fr 1.15fr"><div class="ct-n">14</div><div class="ct-s">서술형 평가</div><div>서술형 평가<span class="sub">경기 참여 소감문 작성</span></div><div class="ct-c">자기관리</div></div>
+    <div class="ct-r" style="grid-template-columns:70px 1.25fr 2.7fr 1.15fr"><div class="ct-n">15</div><div class="ct-s">피클볼 미니게임<br>수업 정리</div><div>피클볼 미니게임<span class="sub">수업 정리 · 소감문 발표 및 공유</span></div><div class="ct-c">의사소통<br>공동체</div></div>
+  </div>
+  <div class="foot">광평중 김주현</div><div class="pageno">11</div>
+</section>
+
+<!-- PART 03 기술 지도 -->
+<section class="slide part-hero" style="background:radial-gradient(120% 100% at 20% 50%, #0e2b1c 0%, #0F1923 60%)">
+  <div data-r style="--d:0" class="part-no" style="color:var(--green)">PART 03</div>
+  <div data-r style="--d:1" class="part-big">기술<br><span style="margin-left:1.2em" class="gr">지도</span></div>
+  <div data-r style="--d:2" class="part-line">6가지 기술의 핵심 포인트와, 학생들이 꼭 하는 실수</div>
+</section>
+
+<!-- 필수 지도 내용 -->
+<section class="slide">
+  <div class="head-row" style="margin-bottom:20px">
+    <div><div data-r style="--d:0" class="eyebrow"><span class="tag" style="background:var(--green);color:#03210f">PART 03</span></div>
+    <h2 data-r style="--d:1" class="s-title">필수 지도 내용 <span class="gr">6가지</span></h2></div>
+    <div data-r style="--d:1" class="s-sub" style="margin:0;font-size:17px">기술마다 &ldquo;이것 하나&rdquo;만 잡아주면 된다</div>
+  </div>
+  <div class="grid g3" style="gap:15px">
+    <div class="card" data-r style="--d:2;padding:18px 20px;justify-content:center"><div class="skl am">그립</div><div class="c-h" style="font-size:19px;margin:10px 0 6px">컨티넨탈(악수) 그립</div><div class="c-d sm" style="color:var(--muted);font-size:16px;line-height:1.5">패들과 악수하듯 잡는다. 포핸드·백핸드를 <b style="color:var(--amber)">바꾸지 않고 그대로</b> 쓴다.</div></div>
+    <div class="card" data-r style="--d:3;padding:18px 20px;justify-content:center"><div class="skl">포핸드</div><div class="c-h" style="font-size:19px;margin:10px 0 6px">낮은 자세 · 앞에서 임팩트</div><div class="c-d sm" style="color:var(--muted);font-size:16px;line-height:1.5">무릎을 굽히고 어깨를 돌려서, 공은 <b style="color:var(--orange)">몸 앞</b>에서 맞힌다.</div></div>
+    <div class="card" data-r style="--d:4;padding:18px 20px;justify-content:center"><div class="skl">백핸드</div><div class="c-h" style="font-size:19px;margin:10px 0 6px">손목 고정 · 몸통으로</div><div class="c-d sm" style="color:var(--muted);font-size:16px;line-height:1.5">손목을 쓰지 않고 팔꿈치를 고정한 채 <b style="color:var(--orange)">몸통 회전</b>으로 민다.</div></div>
+    <div class="card" data-r style="--d:5;padding:18px 20px;justify-content:center;border-color:rgba(0,229,255,.4)"><div class="skl cy">딩크</div><div class="c-h" style="font-size:19px;margin:10px 0 6px">때리지 말고 밀어 올리기</div><div class="c-d sm" style="color:var(--muted);font-size:16px;line-height:1.5">힘을 빼고 어깨로 밀어 올린다. <b style="color:var(--cyan)">네트만 넘기면 성공</b>.</div></div>
+    <div class="card" data-r style="--d:6;padding:18px 20px;justify-content:center"><div class="skl gr">발리</div><div class="c-h" style="font-size:19px;margin:10px 0 6px">백스윙 없이 짧게 막기</div><div class="c-d sm" style="color:var(--muted);font-size:16px;line-height:1.5">패들은 항상 <b style="color:var(--green)">가슴 앞</b>에 두고, 휘두르지 말고 대기만 한다.</div></div>
+    <div class="card" data-r style="--d:7;padding:18px 20px;justify-content:center"><div class="skl am">서브</div><div class="c-h" style="font-size:19px;margin:10px 0 6px">배꼽 아래에서 위로</div><div class="c-d sm" style="color:var(--muted);font-size:16px;line-height:1.5">언더핸드로 긁어 올려 <b style="color:var(--amber)">대각선</b> 서비스 코트에 넣는다.</div></div>
+  </div>
+  <div class="foot">광평중 김주현</div><div class="pageno">13</div>
+</section>
+
+<!-- 자주 나오는 오류와 교정 -->
+<section class="slide plan">
+  <div class="head-row" style="margin-bottom:18px">
+    <div><div data-r style="--d:0" class="eyebrow"><span class="tag" style="background:var(--green);color:#03210f">PART 03</span></div>
+    <h2 data-r style="--d:1" class="s-title">자주 나오는 <span class="gr">오류와 교정</span></h2></div>
+    <div data-r style="--d:1" class="s-sub" style="margin:0;font-size:17px">한 반에 꼭 나오는 여섯 가지</div>
+  </div>
+  <div class="ctable" data-r style="--d:2">
+    <div class="ct-h" style="grid-template-columns:.75fr 1.6fr 1.75fr"><div>구분</div><div style="color:#ff8a65">이런 실수를 한다</div><div class="cyan-h">이렇게 말해준다</div></div>
+    <div class="ct-r" style="grid-template-columns:.75fr 1.6fr 1.75fr"><div class="ct-k">스트로크</div><div>테니스처럼 크게 휘두른다</div><div>&ldquo;백스윙은 어깨 뒤로 넘기지 말고, 짧게 밀어라&rdquo;</div></div>
+    <div class="ct-r" style="grid-template-columns:.75fr 1.6fr 1.75fr"><div class="ct-k">서브</div><div>어깨 위에서 오버핸드로 넘긴다</div><div>&ldquo;배꼽 아래에서 위로 긁어 올린다&rdquo;</div></div>
+    <div class="ct-r" style="grid-template-columns:.75fr 1.6fr 1.75fr"><div class="ct-k">리턴</div><div>서브 리턴을 바로 공중에서 친다</div><div>&ldquo;처음 두 번은 무조건 땅에 튀긴 뒤&rdquo;</div></div>
+    <div class="ct-r" style="grid-template-columns:.75fr 1.6fr 1.75fr"><div class="ct-k">딩크</div><div>세게 때려서 넘긴다</div><div>&ldquo;넘기기만 하면 이긴다, 힘을 빼라&rdquo;</div></div>
+    <div class="ct-r" style="grid-template-columns:.75fr 1.6fr 1.75fr"><div class="ct-k">발리</div><div>신나서 논발리존을 밟고 친다</div><div>&ldquo;라인을 밟아도 반칙, 한 발 뒤에서&rdquo;</div></div>
+    <div class="ct-r" style="grid-template-columns:.75fr 1.6fr 1.75fr"><div class="ct-k">준비 자세</div><div>패들을 아래로 내리고 서 있다</div><div>&ldquo;패들은 항상 가슴 앞에&rdquo;</div></div>
+  </div>
+  <div class="foot">광평중 김주현</div><div class="pageno">14</div>
+</section>
+
+
+<!-- 10 PART 04 -->
+<section class="slide part-hero" style="background:radial-gradient(120% 100% at 20% 50%, #0d2b33 0%, #0F1923 60%)">
+  <div data-r style="--d:0" class="part-no" style="color:var(--cyan)">PART 04</div>
+  <div data-r style="--d:1" class="part-big">본시<br><span style="margin-left:1.2em" class="cy">수업 나눔</span></div>
+  <div data-r style="--d:2" class="part-line">12차시 — 스테이션 4곳 순환 연습 후 미니게임까지</div>
+</section>
+
+<!-- 11 수업 운영 팁 -->
+<section class="slide">
+  <div class="head-row" style="margin-bottom:22px">
+    <div><div data-r style="--d:0" class="eyebrow"><span class="tag cy">PART 04</span></div>
+    <h2 data-r style="--d:1" class="s-title">수업 운영 <span class="cy">팁</span></h2></div>
+  </div>
+  <div class="grid g2" style="gap:16px">
+    <div class="card" data-r style="--d:2;flex-direction:row;align-items:center;gap:20px"><div class="ic am">🎯</div><div><div class="c-h" style="font-size:20px;margin-bottom:5px">흥미 유발 중심의 도입</div><div class="c-d sm" style="color:var(--muted)">첫 시간부터 공을 주고받게 해 “해볼 만하다”를 먼저 경험시킨다</div></div></div>
+    <div class="card" data-r style="--d:3;flex-direction:row;align-items:center;gap:20px"><div class="ic">⚖️</div><div><div class="c-h" style="font-size:20px;margin-bottom:5px">수준별 맞춤 활동 · 페어 구성</div><div class="c-d sm" style="color:var(--muted)">기술 격차를 짝 구성과 과제 난이도로 완화한다</div></div></div>
+    <div class="card" data-r style="--d:4;flex-direction:row;align-items:center;gap:20px"><div class="ic gr">🤝</div><div><div class="c-h" style="font-size:20px;margin-bottom:5px">협동·배려 중심의 인성 요소 통합</div><div class="c-d sm" style="color:var(--muted)">기능 연습 안에 격려와 역할 나눔을 함께 넣는다</div></div></div>
+    <div class="card" data-r style="--d:5;flex-direction:row;align-items:center;gap:20px"><div class="ic cy">🏟️</div><div><div class="c-h" style="font-size:20px;margin-bottom:5px">공간을 고려한 탄력적 운영</div><div class="c-d sm" style="color:var(--muted)">벽·네트·기계 등 가용 공간에 맞춰 스테이션을 조정한다</div></div></div>
+  </div>
+  <div class="foot">광평중 김주현</div><div class="pageno">16</div>
+</section>
+
+<!-- 수업 중 꿀팁 -->
+<section class="slide" style="background:radial-gradient(120% 90% at 82% 14%, #0d2b33 0%, #0F1923 58%)">
+  <div class="head-row" style="margin-bottom:20px">
+    <div><div data-r style="--d:0" class="eyebrow"><span class="tag cy">PART 04</span></div>
+    <h2 data-r style="--d:1" class="s-title">수업 중 <span class="cy">꿀팁</span></h2></div>
+    <div data-r style="--d:1" class="s-sub" style="margin:0;font-size:17px">해보고 알게 된 것들</div>
+  </div>
+  <div data-r style="--d:2;display:flex;gap:20px;align-items:center;background:rgba(255,61,0,.09);border:1px solid rgba(255,61,0,.42);border-radius:14px;padding:15px 22px;margin-bottom:15px;flex-shrink:0">
+    <div style="flex-shrink:0;font-size:13px;font-weight:800;letter-spacing:.12em;color:var(--orange)">안전 1순위</div>
+    <div style="font-size:19px;line-height:1.5;color:var(--body)">이동할 때는 <b style="color:var(--ink)">패들을 항상 아래로</b> — 뒤돌다 얼굴을 맞는 사고가 가장 많다.</div>
+  </div>
+  <div class="grid g2" style="gap:14px">
+    <div class="card" data-r style="--d:3;flex-direction:row;align-items:center;gap:16px;padding:15px 20px"><div class="ic cy">📣</div><div><div class="c-h" style="font-size:19px;margin-bottom:2px">공이 굴러오면 &ldquo;볼!&rdquo;</div><div class="c-d sm" style="color:var(--muted);font-size:16px">외치고 랠리를 즉시 중단하는 약속을 첫 시간에</div></div></div>
+    <div class="card" data-r style="--d:4;flex-direction:row;align-items:center;gap:16px;padding:15px 20px"><div class="ic am">🎾</div><div><div class="c-h" style="font-size:19px;margin-bottom:2px">조당 공 3개씩</div><div class="c-d sm" style="color:var(--muted);font-size:16px">주우러 가는 시간이 줄어 연습량이 눈에 띄게 늘어난다</div></div></div>
+    <div class="card" data-r style="--d:5;flex-direction:row;align-items:center;gap:16px;padding:15px 20px"><div class="ic gr">📏</div><div><div class="c-h" style="font-size:19px;margin-bottom:2px">서브 라인은 두 개</div><div class="c-d sm" style="color:var(--muted);font-size:16px">엔드라인 / 논발리존 라인 중 학생이 직접 고르게</div></div></div>
+    <div class="card" data-r style="--d:6;flex-direction:row;align-items:center;gap:16px;padding:15px 20px"><div class="ic">👥</div><div><div class="c-h" style="font-size:19px;margin-bottom:2px">짝은 앞뒤로 다르게</div><div class="c-d sm" style="color:var(--muted);font-size:16px">초반엔 실력을 섞고, 후반엔 비슷한 수준끼리 붙인다</div></div></div>
+    <div class="card" data-r style="--d:7;flex-direction:row;align-items:center;gap:16px;padding:15px 20px"><div class="ic cy">🏟️</div><div><div class="c-h" style="font-size:19px;margin-bottom:2px">네트가 모자라면</div><div class="c-d sm" style="color:var(--muted);font-size:16px">고깔·라인테이프·벽면으로 대체해도 연습은 충분하다</div></div></div>
+    <div class="card" data-r style="--d:8;flex-direction:row;align-items:center;gap:16px;padding:15px 20px"><div class="ic am">⏱️</div><div><div class="c-h" style="font-size:19px;margin-bottom:2px">스테이션은 5분 타이머</div><div class="c-d sm" style="color:var(--muted);font-size:16px">호루라기 한 번에 시계 방향 이동 — 설명을 반복하지 않는다</div></div></div>
+  </div>
+  <div class="foot">광평중 김주현</div><div class="pageno">17</div>
+</section>
+
+
+<!-- 12 스테이션 설명 -->
+<section class="slide">
+  <div class="head-row" style="margin-bottom:20px">
+    <div><div data-r style="--d:0" class="eyebrow"><span class="tag cy">PART 04</span></div>
+    <h2 data-r style="--d:1" class="s-title">스테이션 <span class="cy">설명</span></h2></div>
+    <div data-r style="--d:1" class="s-sub" style="margin:0;font-size:17px">4개 조가 각 스테이션에서 시작해 순환</div>
+  </div>
+  <div class="grid g4" style="gap:16px">
+    <div class="stn" data-r style="--d:2;border-color:rgba(255,145,0,.45);background:rgba(255,145,0,.07)">
+      <div class="circ" style="background:rgba(255,145,0,.12);border:2px solid rgba(255,145,0,.5);color:var(--amber)"><span class="cb">A</span><span class="cs">STATION</span></div>
+      <div class="sn">벽치기</div>
+      <div class="sd">딩크 · 포핸드 · 백핸드</div>
+      <div class="sq" style="background:rgba(255,145,0,.16);color:var(--amber)">1조 시작</div>
+    </div>
+    <div class="stn" data-r style="--d:3;border-color:rgba(255,61,0,.45);background:rgba(255,61,0,.07)">
+      <div class="circ" style="background:rgba(255,61,0,.12);border:2px solid rgba(255,61,0,.5);color:var(--orange)"><span class="cb">B</span><span class="cs">STATION</span></div>
+      <div class="sn">컨트롤 연습</div>
+      <div class="sd">개인 또는 2인</div>
+      <div class="sq" style="background:rgba(255,61,0,.16);color:var(--orange)">2조 시작</div>
+    </div>
+    <div class="stn" data-r style="--d:4;border-color:rgba(0,229,255,.4);background:rgba(0,229,255,.07)">
+      <div class="circ" style="background:rgba(0,229,255,.12);border:2px solid rgba(0,229,255,.5);color:var(--cyan)"><span class="cb">C</span><span class="cs">STATION</span></div>
+      <div class="sn">발리 연습</div>
+      <div class="sd">기계를 이용한<br>네트 앞 발리</div>
+      <div class="sq" style="background:rgba(0,229,255,.16);color:var(--cyan)">3조 시작</div>
+    </div>
+    <div class="stn" data-r style="--d:5;border-color:rgba(0,200,83,.42);background:rgba(0,200,83,.08)">
+      <div class="circ" style="background:rgba(0,200,83,.12);border:2px solid rgba(0,200,83,.5);color:var(--green)"><span class="cb">D</span><span class="cs">STATION</span></div>
+      <div class="sn">1:1 딩크</div>
+      <div class="sd">짝과 마주 보고<br>딩크 주고받기</div>
+      <div class="sq" style="background:rgba(0,200,83,.16);color:var(--green)">4조 시작</div>
+    </div>
+  </div>
+  <div class="foot">광평중 김주현</div><div class="pageno">18</div>
+</section>
+
+<!-- 13 스테이션 목표 -->
+<section class="slide" style="background:radial-gradient(120% 90% at 78% 14%, #0d2b33 0%, #0F1923 58%)">
+  <div class="head-row" style="margin-bottom:20px">
+    <div><div data-r style="--d:0" class="eyebrow"><span class="tag cy">PART 04</span></div>
+    <h2 data-r style="--d:1" class="s-title">스테이션 <span class="cy">목표</span></h2></div>
+    <div data-r style="--d:1" class="s-sub" style="margin:0;font-size:17px">달성하면 다음 스테이션으로 이동</div>
+  </div>
+  <div class="grid g4" style="gap:16px">
+    <div class="stn" data-r style="--d:2;border-color:rgba(255,145,0,.45)">
+      <div class="sl" style="color:var(--amber)">A · 벽치기</div>
+      <div class="circ" style="background:rgba(255,145,0,.12);border:2px solid rgba(255,145,0,.5);color:var(--amber)"><span class="cb">20</span><span class="cs">회 연속</span></div>
+      <div class="sd">벽치기 연속</div>
+      <div class="sq" style="background:rgba(255,145,0,.16);color:var(--amber)">1조 시작</div>
+    </div>
+    <div class="stn" data-r style="--d:3;border-color:rgba(255,61,0,.45)">
+      <div class="sl" style="color:var(--orange)">B · 컨트롤</div>
+      <div class="circ" style="background:rgba(255,61,0,.12);border:2px solid rgba(255,61,0,.5);color:var(--orange)"><span class="cb">20</span><span class="cs">회 연속</span></div>
+      <div class="sd">컨트롤 연속</div>
+      <div class="sq" style="background:rgba(255,61,0,.16);color:var(--orange)">2조 시작</div>
+    </div>
+    <div class="stn" data-r style="--d:4;border-color:rgba(0,229,255,.4)">
+      <div class="sl" style="color:var(--cyan)">C · 발리</div>
+      <div class="circ" style="background:rgba(0,229,255,.12);border:2px solid rgba(0,229,255,.5);color:var(--cyan)"><span class="cb">5</span><span class="cs">회 연속</span></div>
+      <div class="sd">포핸드 발리 연속</div>
+      <div class="sq" style="background:rgba(0,229,255,.16);color:var(--cyan)">3조 시작</div>
+    </div>
+    <div class="stn" data-r style="--d:5;border-color:rgba(0,200,83,.42)">
+      <div class="sl" style="color:var(--green)">D · 딩크</div>
+      <div class="circ" style="background:rgba(0,200,83,.12);border:2px solid rgba(0,200,83,.5);color:var(--green)"><span class="cb">20</span><span class="cs">회 연속</span></div>
+      <div class="sd">1:1 딩크 연속</div>
+      <div class="sq" style="background:rgba(0,200,83,.16);color:var(--green)">4조 시작</div>
+    </div>
+  </div>
+  <div class="foot">광평중 김주현</div><div class="pageno">19</div>
+</section>
+
+<!-- 14 미니 게임 -->
+<section class="slide">
+  <div class="head-row" style="margin-bottom:22px">
+    <div><div data-r style="--d:0" class="eyebrow"><span class="tag">PART 04</span></div>
+    <h2 data-r style="--d:1" class="s-title">미니 <span class="accent">게임</span></h2></div>
+    <div data-r style="--d:1" class="s-sub" style="margin:0;font-size:17px">스테이션에서 익힌 기술을 바로 경기로</div>
+  </div>
+  <div class="grid g2" style="gap:15px;grid-template-rows:auto auto auto">
+    <div class="card" data-r style="--d:2;grid-column:1 / -1;flex-direction:row;align-items:center;gap:20px;padding:18px 24px;border-color:rgba(255,61,0,.42);background:rgba(255,61,0,.06)">
+      <div class="ic">🏓</div><div class="c-d" style="font-size:21px;color:var(--ink);font-weight:700">팀원과 미니게임으로 오늘 수업에서 배운 기술을 활용한다</div>
+    </div>
+    <div class="card" data-r style="--d:3;flex-direction:row;align-items:center;gap:18px;padding:16px 22px"><div class="ic am">🏆</div><div><div class="c-h" style="font-size:20px;margin-bottom:3px">15점 랠리포인트제</div><div class="c-d sm" style="color:var(--muted)">서브권과 무관하게 매 랠리마다 득점</div></div></div>
+    <div class="card" data-r style="--d:4;flex-direction:row;align-items:center;gap:18px;padding:16px 22px"><div class="ic cy">🎾</div><div><div class="c-h" style="font-size:20px;margin-bottom:3px">서브는 수준별로</div><div class="c-d sm" style="color:var(--muted)">엔드라인 또는 논발리존 라인에서 선택</div></div></div>
+    <div class="card" data-r style="--d:5;flex-direction:row;align-items:center;gap:18px;padding:16px 22px"><div class="ic gr">🙋</div><div><div class="c-h" style="font-size:20px;margin-bottom:3px">쉬는 인원은 심판 역할</div><div class="c-d sm" style="color:var(--muted)">경기에 참여하지 않는 학생도 역할을 맡는다</div></div></div>
+    <div class="card" data-r style="--d:6;flex-direction:row;align-items:center;gap:18px;padding:16px 22px"><div class="ic">👏</div><div><div class="c-h" style="font-size:20px;margin-bottom:3px">비난보다 격려</div><div class="c-d sm" style="color:var(--muted)">즐기면서 참여하는 것이 첫 번째 규칙</div></div></div>
+  </div>
+  <div class="foot">광평중 김주현</div><div class="pageno">20</div>
+</section>
+
+<!-- 15 연습 동영상 -->
+<section class="slide" style="background:radial-gradient(120% 100% at 50% 40%, #17242f 0%, #0F1923 62%)">
+  <div class="head-row" style="margin-bottom:20px">
+    <div><div data-r style="--d:0" class="eyebrow"><span class="tag cy">PART 04</span></div>
+    <h2 data-r style="--d:1" class="s-title">연습 <span class="cy">동영상</span></h2></div>
+    <div data-r style="--d:1" class="s-sub" style="margin:0;font-size:17px">현장 촬영 영상 3편 시연</div>
+  </div>
+  <div class="grid g3" style="gap:18px">
+    <div class="card" data-r style="--d:2;align-items:center;justify-content:center;text-align:center;border-style:dashed;border-color:rgba(0,229,255,.3)">
+      <div style="font-size:44px;margin-bottom:14px">▶</div>
+      <div class="c-h" style="font-size:20px">영상 1</div>
+      <div class="c-d sm" style="color:var(--muted)">스테이션 순환 연습 장면</div>
+    </div>
+    <div class="card" data-r style="--d:3;align-items:center;justify-content:center;text-align:center;border-style:dashed;border-color:rgba(0,229,255,.3)">
+      <div style="font-size:44px;margin-bottom:14px">▶</div>
+      <div class="c-h" style="font-size:20px">영상 2</div>
+      <div class="c-d sm" style="color:var(--muted)">딩크 · 발리 연습 장면</div>
+    </div>
+    <div class="card" data-r style="--d:4;align-items:center;justify-content:center;text-align:center;border-style:dashed;border-color:rgba(0,229,255,.3)">
+      <div style="font-size:44px;margin-bottom:14px">▶</div>
+      <div class="c-h" style="font-size:20px">영상 3</div>
+      <div class="c-d sm" style="color:var(--muted)">미니게임 경기 장면</div>
+    </div>
+  </div>
+  <div class="tip" data-r style="--d:5;margin-top:16px">💡 발표 시 원본 영상 파일을 이 자리에서 재생합니다.</div>
+  <div class="foot">광평중 김주현</div><div class="pageno">21</div>
+</section>
+
+<!-- PART 05 스킬챌린지 -->
+<section class="slide part-hero" style="background:radial-gradient(120% 100% at 20% 50%, #2e1405 0%, #0F1923 60%)">
+  <div data-r style="--d:0" class="part-no">PART 05</div>
+  <div data-r style="--d:1" class="part-big">스킬<br><span style="margin-left:1.2em" class="accent">챌린지</span></div>
+  <div data-r style="--d:2" class="part-line">13차시 수행평가 — 6단계를 스스로 깨 나가는 도전 과제</div>
+</section>
+
+<!-- 스킬챌린지 6단계 -->
+<section class="slide">
+  <div class="head-row" style="margin-bottom:20px">
+    <div><div data-r style="--d:0" class="eyebrow"><span class="tag">PART 05</span></div>
+    <h2 data-r style="--d:1" class="s-title">스킬챌린지 <span class="accent">6단계</span></h2></div>
+    <div data-r style="--d:1" class="s-sub" style="margin:0;font-size:17px">앞 단계를 통과해야 다음 단계 도전</div>
+  </div>
+  <div class="grid g3" style="gap:15px">
+    <div class="card lv" data-r style="--d:2"><div class="lvno am">LV.1</div><div class="c-h" style="font-size:19px">패들 볼 컨트롤</div><div class="c-d sm" style="color:var(--muted);font-size:16px;margin-top:5px">패들 위에 공 튀기기</div><div class="lvgoal am">연속 20회</div></div>
+    <div class="card lv" data-r style="--d:3"><div class="lvno am">LV.2</div><div class="c-h" style="font-size:19px">벽치기</div><div class="c-d sm" style="color:var(--muted);font-size:16px;margin-top:5px">벽에 대고 포핸드 반복</div><div class="lvgoal am">연속 20회</div></div>
+    <div class="card lv" data-r style="--d:4"><div class="lvno or">LV.3</div><div class="c-h" style="font-size:19px">포핸드 랠리</div><div class="c-d sm" style="color:var(--muted);font-size:16px;margin-top:5px">짝과 마주 보고 주고받기</div><div class="lvgoal or">연속 20회</div></div>
+    <div class="card lv" data-r style="--d:5"><div class="lvno cy">LV.4</div><div class="c-h" style="font-size:19px">딩크</div><div class="c-d sm" style="color:var(--muted);font-size:16px;margin-top:5px">논발리존에서 1:1 딩크</div><div class="lvgoal cy">연속 20회</div></div>
+    <div class="card lv" data-r style="--d:6"><div class="lvno cy">LV.5</div><div class="c-h" style="font-size:19px">발리</div><div class="c-d sm" style="color:var(--muted);font-size:16px;margin-top:5px">네트 앞 포핸드 발리</div><div class="lvgoal cy">연속 5회</div></div>
+    <div class="card lv" data-r style="--d:7;border-color:rgba(0,200,83,.45);background:rgba(0,200,83,.06)"><div class="lvno gr">LV.6</div><div class="c-h" style="font-size:19px">서브</div><div class="c-d sm" style="color:var(--muted);font-size:16px;margin-top:5px">대각선 서비스 코트에 넣기</div><div class="lvgoal gr">5구 중 3구</div></div>
+  </div>
+  <div class="foot">광평중 김주현</div><div class="pageno">23</div>
+</section>
+
+<!-- 스킬챌린지 평가 기준 -->
+<section class="slide" style="background:radial-gradient(120% 90% at 82% 12%, #2a2410 0%, #0F1923 55%)">
+  <div class="head-row" style="margin-bottom:18px">
+    <div><div data-r style="--d:0" class="eyebrow"><span class="tag" style="background:var(--amber);color:#241800">PART 05</span></div>
+    <h2 data-r style="--d:1" class="s-title">스킬챌린지 <span class="amb">평가 기준</span></h2></div>
+  </div>
+  <div data-r style="--d:2;display:flex;gap:22px;align-items:center;background:rgba(255,145,0,.08);border:1px solid rgba(255,145,0,.42);border-radius:16px;padding:16px 26px;margin-bottom:15px;flex-shrink:0">
+    <div style="flex-shrink:0;font-size:13px;font-weight:800;letter-spacing:.12em;color:var(--amber)">운영 방법</div>
+    <div style="font-size:18px;line-height:1.5;color:var(--body)">단계별 <b style="color:var(--ink)">3회 시도 중 최고 기록</b>을 인정 · 짝이 세고 교사가 확인 · 통과한 단계는 기록판에 스티커</div>
+  </div>
+  <div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:12px">
+    <div class="card" data-r style="--d:3;flex:1;flex-direction:row;align-items:center;gap:22px;padding:14px 24px;border-color:rgba(255,145,0,.45);background:rgba(255,145,0,.06)">
+      <div style="flex-shrink:0;width:52px;text-align:center;font-size:32px;font-weight:900;color:var(--amber)">상</div>
+      <div><div class="c-h" style="font-size:20px">LV.5 이상 통과 &nbsp;+&nbsp; 규칙을 설명할 수 있다</div><div style="font-size:16.5px;color:var(--muted);line-height:1.45;margin-top:3px">발리·서브까지 안정적으로 수행하고, 투바운드와 논발리존을 스스로 설명한다</div></div>
+    </div>
+    <div class="card" data-r style="--d:4;flex:1;flex-direction:row;align-items:center;gap:22px;padding:14px 24px;border-color:rgba(0,229,255,.36)">
+      <div style="flex-shrink:0;width:52px;text-align:center;font-size:32px;font-weight:900;color:var(--cyan)">중</div>
+      <div><div class="c-h" style="font-size:20px">LV.3 ~ LV.4 통과</div><div style="font-size:16.5px;color:var(--muted);line-height:1.45;margin-top:3px">짝과 랠리를 이어 가고, 딩크로 네트를 넘길 수 있다</div></div>
+    </div>
+    <div class="card soft" data-r style="--d:5;flex:1;flex-direction:row;align-items:center;gap:22px;padding:14px 24px">
+      <div style="flex-shrink:0;width:52px;text-align:center;font-size:32px;font-weight:900;color:var(--muted)">하</div>
+      <div><div class="c-h" style="font-size:20px">LV.1 ~ LV.2 통과</div><div style="font-size:16.5px;color:var(--muted);line-height:1.45;margin-top:3px">패들로 공을 다루고, 벽치기로 반복 연습을 이어 간다</div></div>
+    </div>
+  </div>
+  <div class="foot">광평중 김주현</div><div class="pageno">24</div>
+</section>
+
+
+<!-- 16 PART 06 -->
+<section class="slide part-hero" style="background:radial-gradient(120% 100% at 20% 50%, #0e2b1c 0%, #0F1923 60%)">
+  <div data-r style="--d:0" class="part-no" style="color:var(--green)">PART 06</div>
+  <div data-r style="--d:1" class="part-big">수업<br><span style="margin-left:1.2em" class="gr">정리</span></div>
+  <div data-r style="--d:2" class="part-line">15차시를 운영하며 확인한 여덟 가지</div>
+</section>
+
+<!-- 17 수업 정리 및 결과 1 -->
+<section class="slide">
+  <div class="head-row" style="margin-bottom:22px">
+    <div><div data-r style="--d:0" class="eyebrow"><span class="tag" style="background:var(--green);color:#03210f">PART 06</span></div>
+    <h2 data-r style="--d:1" class="s-title">수업 정리 및 <span class="gr">결과</span></h2></div>
+    <div data-r style="--d:1" class="s-sub" style="margin:0;font-size:17px">1 ~ 4</div>
+  </div>
+  <div class="grid g2" style="gap:16px">
+    <div class="card" data-r style="--d:2;flex-direction:row;align-items:center;gap:20px"><div class="num" style="color:var(--green);font-size:34px">01</div><div><div class="c-h" style="font-size:21px;margin-bottom:4px">학생들의 참여도와 흥미 유발</div><div class="c-d sm" style="color:var(--muted)">쉬는 학생 없이 전원이 라켓을 잡았다</div></div></div>
+    <div class="card" data-r style="--d:3;flex-direction:row;align-items:center;gap:20px"><div class="num" style="color:var(--green);font-size:34px">02</div><div><div class="c-h" style="font-size:21px;margin-bottom:4px">기초 기술의 점진적 습득</div><div class="c-d sm" style="color:var(--muted)">그립 → 스트로크 → 딩크 → 발리 → 서브 순으로 축적</div></div></div>
+    <div class="card" data-r style="--d:4;flex-direction:row;align-items:center;gap:20px"><div class="num" style="color:var(--green);font-size:34px">03</div><div><div class="c-h" style="font-size:21px;margin-bottom:4px">협동심과 소통 능력의 향상</div><div class="c-d sm" style="color:var(--muted)">짝 연습과 조별 순환에서 자연스럽게 대화가 늘었다</div></div></div>
+    <div class="card" data-r style="--d:5;flex-direction:row;align-items:center;gap:20px"><div class="num" style="color:var(--green);font-size:34px">04</div><div><div class="c-h" style="font-size:21px;margin-bottom:4px">운동 기능 및 체력 향상</div><div class="c-d sm" style="color:var(--muted)">짧은 랠리가 반복되며 활동량이 확보되었다</div></div></div>
+  </div>
+  <div class="foot">광평중 김주현</div><div class="pageno">26</div>
+</section>
+
+<!-- 18 수업 정리 및 결과 2 -->
+<section class="slide">
+  <div class="head-row" style="margin-bottom:22px">
+    <div><div data-r style="--d:0" class="eyebrow"><span class="tag" style="background:var(--green);color:#03210f">PART 06</span></div>
+    <h2 data-r style="--d:1" class="s-title">수업 <span class="gr">정리</span></h2></div>
+    <div data-r style="--d:1" class="s-sub" style="margin:0;font-size:17px">5 ~ 8</div>
+  </div>
+  <div class="grid g2" style="gap:16px">
+    <div class="card" data-r style="--d:2;flex-direction:row;align-items:center;gap:20px"><div class="num" style="color:var(--cyan);font-size:34px">05</div><div><div class="c-h" style="font-size:21px;margin-bottom:4px">스포츠맨십과 규칙 의식 강화</div><div class="c-d sm" style="color:var(--muted)">심판 역할을 맡으며 규칙을 스스로 확인했다</div></div></div>
+    <div class="card" data-r style="--d:3;flex-direction:row;align-items:center;gap:20px"><div class="num" style="color:var(--cyan);font-size:34px">06</div><div><div class="c-h" style="font-size:21px;margin-bottom:4px">전이 학습 가능성 확인</div><div class="c-d sm" style="color:var(--muted)">배드민턴·탁구 등 다른 네트형 종목으로 이어졌다</div></div></div>
+    <div class="card" data-r style="--d:4;flex-direction:row;align-items:center;gap:20px"><div class="num" style="color:var(--cyan);font-size:34px">07</div><div><div class="c-h" style="font-size:21px;margin-bottom:4px">학생 간 긍정적인 관계 형성</div><div class="c-d sm" style="color:var(--muted)">격려 중심 규칙이 팀 분위기로 자리 잡았다</div></div></div>
+    <div class="card" data-r style="--d:5;flex-direction:row;align-items:center;gap:20px"><div class="num" style="color:var(--cyan);font-size:34px">08</div><div><div class="c-h" style="font-size:21px;margin-bottom:4px">수업 내용의 점진적 구성 효과</div><div class="c-d sm" style="color:var(--muted)">차시 순서 자체가 초보자의 진입 장벽을 낮췄다</div></div></div>
+  </div>
+  <div class="foot">광평중 김주현</div><div class="pageno">27</div>
+</section>
+
+<!-- 용어사전 -->
+<section class="slide">
+  <div class="head-row" style="margin-bottom:14px">
+    <div><div data-r style="--d:0" class="eyebrow"><span class="tag" style="background:var(--green);color:#03210f">PART 06</span></div>
+    <h2 data-r style="--d:1" class="s-title">피클볼 <span class="gr">용어</span></h2></div>
+    <div data-r style="--d:1" class="s-sub" style="margin:0;font-size:17px">1차시에 함께 읽고 시작하면 좋다</div>
+  </div>
+  <div class="gloss" style="margin-top:4px;gap:6px 24px">
+    <div class="gi" data-r style="--d:2"><b>딩크 <i>Dink</i></b><span>논발리존 위로 낮고 부드럽게 넘기는 샷</span></div>
+    <div class="gi" data-r style="--d:2"><b>발리 <i>Volley</i></b><span>공이 바운드되기 전에 공중에서 치는 샷</span></div>
+    <div class="gi" data-r style="--d:3"><b>논발리존 <i>Non-Volley Zone</i></b><span>네트 양쪽 2.1m 구역, 흔히 &lsquo;키친&rsquo;이라 부른다</span></div>
+    <div class="gi" data-r style="--d:3"><b>투바운드 룰 <i>Two-Bounce Rule</i></b><span>서브와 리턴은 반드시 한 번씩 바운드시켜야 한다</span></div>
+    <div class="gi" data-r style="--d:4"><b>그라운드 스트로크 <i>Ground Stroke</i></b><span>한 번 바운드된 공을 치는 기본 타법</span></div>
+    <div class="gi" data-r style="--d:4"><b>랠리포인트제 <i>Rally Point</i></b><span>서브권과 관계없이 매 랠리마다 점수가 나는 방식</span></div>
+    <div class="gi" data-r style="--d:5"><b>패들 <i>Paddle</i></b><span>줄이 없는 판 형태의 피클볼 전용 라켓</span></div>
+    <div class="gi" data-r style="--d:5"><b>서비스 코트 <i>Service Court</i></b><span>서브가 들어가야 하는 대각선 반대편 구역</span></div>
+    <div class="gi" data-r style="--d:6"><b>엔드라인 <i>Baseline</i></b><span>코트 양 끝의 선, 서브는 이 선 뒤에서 넣는다</span></div>
+    <div class="gi" data-r style="--d:6"><b>랠리 <i>Rally</i></b><span>서브부터 득점이 날 때까지 공을 주고받는 한 번의 공방</span></div>
+    <div class="gi" data-r style="--d:7"><b>포핸드 · 백핸드</b><span>패들 잡은 손 쪽 / 반대쪽으로 치는 타법</span></div>
+    <div class="gi" data-r style="--d:7"><b>스킬챌린지</b><span>단계별 기능 목표를 하나씩 통과해 가는 도전 과제</span></div>
+  </div>
+  <div class="foot">광평중 김주현</div><div class="pageno">28</div>
+</section>
+
+
+<!-- 19 엔딩 -->
+<section class="slide part-hero" style="background:radial-gradient(120% 100% at 50% 45%, #1a2c3f 0%, #0F1923 62%);align-items:center;text-align:center">
+  <div style="position:absolute;bottom:-140px;left:50%;transform:translateX(-50%);width:620px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(255,145,0,.18),transparent 68%);filter:blur(10px)"></div>
+  <div data-r style="--d:0" class="part-no">수업나눔축제</div>
+  <div data-r style="--d:1" class="part-big">감사합니다</div>
+  <div data-r style="--d:2" class="part-line" style="font-size:19px;margin-top:28px">피클볼 — 기초부터 게임까지 &nbsp;|&nbsp; <span class="amb">광평중 김주현</span></div>
+</section>
+
+</div>
+<div id="hud">
+  <div id="prev" class="nav" onclick="go(-1)">‹</div>
+  <div id="next" class="nav" onclick="go(1)">›</div>
+  <div id="count"><b id="cur">1</b> / <span id="tot">1</span></div>
+</div>
+<div id="fsbtn" title="전체화면 (F)">⛶<span class="fslabel"> 전체화면</span></div>
+<div id="ovbtn">⊞ 목차</div>
+<div id="rotate">📱 <b>가로로 돌리면</b> 더 크게 볼 수 있어요</div>
+<div id="hint">← → 또는 스페이스로 이동 · 클릭 · 스와이프 · <b style="color:var(--amber)">O</b> 목차</div>
+<div id="ov"></div>
+<script>
+(function(){
+  var stage = document.getElementById('stage');
+  var slides = Array.prototype.slice.call(stage.querySelectorAll('.slide'));
+  var N = slides.length, cur = 0;
+  var bar = document.getElementById('bar'), curEl = document.getElementById('cur'), hint = document.getElementById('hint');
+  document.getElementById('tot').textContent = N;
+
+  function render(){
+    slides.forEach(function(s,i){
+      s.classList.remove('active','prev');
+      if(i===cur) s.classList.add('active');
+      else if(i<cur) s.classList.add('prev');
+    });
+    bar.style.width = ((cur+1)/N*100) + '%';
+    curEl.textContent = cur+1;
+    try{ if(location.hash !== '#'+(cur+1)) history.replaceState(null,'','#'+(cur+1)); }catch(e){}
+  }
+  window.goto = function(i){ cur = Math.max(0, Math.min(N-1, i)); render(); };
+  window.go = function(d){
+    var n = cur + d;
+    if(n<0||n>=N) return;
+    cur = n; render();
+    if(hint && !hint.classList.contains('hide')){ hint.classList.add('hide'); }
+  };
+
+  // 키보드
+  document.addEventListener('keydown', function(e){
+    var isO = e.code==='KeyO'||e.key==='o'||e.key==='O';
+    if(ov.classList.contains('show')){
+      if(isO||e.key==='Escape'){ e.preventDefault(); closeOv(); }
+      return;
+    }
+    if(e.key==='ArrowRight'||e.key==='ArrowDown'||e.key===' '||e.key==='PageDown'){ e.preventDefault(); go(1); }
+    else if(e.key==='ArrowLeft'||e.key==='ArrowUp'||e.key==='PageUp'){ e.preventDefault(); go(-1); }
+    else if(e.key==='Home'){ goto(0); }
+    else if(e.key==='End'){ goto(N-1); }
+    else if(e.code==='KeyF'||e.key==='f'||e.key==='F'){ toggleFS(); }
+    else if(isO){ e.preventDefault(); openOv(); }
+  });
+  // 클릭(좌/우 절반) — 네비/카운트 영역 제외, 핀치줌 중엔 무시
+  stage.addEventListener('click', function(e){ if(window.visualViewport && window.visualViewport.scale > 1.02) return;
+    var r = stage.getBoundingClientRect();
+    if((e.clientX - r.left) < r.width*0.5) go(-1); else go(1);
+  });
+  // 스와이프 — 핀치줌 중엔 무시
+  var sx=0, sy=0;
+  document.addEventListener('touchstart', function(e){ sx=e.touches[0].clientX; sy=e.touches[0].clientY; }, {passive:true});
+  document.addEventListener('touchend', function(e){ if(window.visualViewport && window.visualViewport.scale > 1.02) return;
+    var dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)){ go(dx<0?1:-1); }
+  }, {passive:true});
+
+  // 전체화면 (PC: F키/버튼, 모바일: 버튼 탭 — 주소창 제거 목적)
+  function isFs(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
+  function toggleFS(){
+    var d=document.documentElement;
+    if(!isFs()){
+      if(d.requestFullscreen){ d.requestFullscreen(); }
+      else if(d.webkitRequestFullscreen){ d.webkitRequestFullscreen(); }
+      else { showToast('이 브라우저는 전체화면 버튼을 지원하지 않아요.<br><b>공유 → 홈 화면에 추가</b> 후 실행하면 전체화면으로 볼 수 있어요.<br>(또는 두 손가락으로 확대·축소)'); return; }
+    } else {
+      if(document.exitFullscreen){ document.exitFullscreen(); }
+      else if(document.webkitExitFullscreen){ document.webkitExitFullscreen(); }
+    }
+  }
+  var _toastT;
+  function showToast(h){
+    var t=document.getElementById('toast');
+    if(!t){ t=document.createElement('div'); t.id='toast'; document.body.appendChild(t); }
+    t.innerHTML=h; t.classList.add('show');
+    clearTimeout(_toastT); _toastT=setTimeout(function(){ t.classList.remove('show'); }, 5600);
+  }
+  // 전체화면 중엔 라벨 숨기고 아이콘만(내용 가림 방지), 진입 전엔 라벨로 발견성 확보
+  function syncFsBtn(){ var b=document.getElementById('fsbtn'); if(b){ b.innerHTML = isFs()?'⛶':'⛶<span class="fslabel"> 전체화면</span>'; b.title = isFs()?'전체화면 해제':'전체화면'; } }
+  function onFsChange(){ syncFsBtn(); fit(); setTimeout(function(){ fit(); if(ov.classList.contains('show')) fitOv(); }, 300); }
+
+  // 16:9 스케일 — 화면에 가득
+  function fit(){
+    var s = Math.min(window.innerWidth/1280, window.innerHeight/720);
+    stage.style.transform = 'translate(-50%,-50%) scale(' + s + ')';
+  }
+
+  // ===== 오버뷰(목차) =====
+  var ov = document.getElementById('ov'), ovBuilt = false;
+  function buildOv(){
+    ov.innerHTML = '';
+    slides.forEach(function(s,i){
+      var cell = document.createElement('div');
+      cell.className = 'ovcell' + (i===cur ? ' cur' : '');
+      var cl = s.cloneNode(true);
+      cl.classList.remove('prev'); cl.classList.add('active');
+      cell.appendChild(cl);
+      var num = document.createElement('div');
+      num.className = 'ovnum'; num.textContent = i+1;
+      cell.appendChild(num);
+      cell.addEventListener('click', function(){ goto(i); closeOv(); });
+      ov.appendChild(cell);
+    });
+    ovBuilt = true;
+  }
+  function fitOv(){
+    var cells = ov.querySelectorAll('.ovcell');
+    for(var i=0;i<cells.length;i++){
+      var w = cells[i].clientWidth, sl = cells[i].querySelector('.slide');
+      // aspect-ratio만으로는 그리드 행높이가 안 잡혀 모바일에서 셀이 겹치는 버그가 있었음
+      // → 명시적 높이를 반드시 지정해야 함(이 한 줄이 핵심 버그 픽스)
+      cells[i].style.height = (w*9/16) + 'px';
+      if(sl) sl.style.transform = 'scale(' + (w/1280) + ')';
+    }
+  }
+  function markCur(){
+    var cells = ov.querySelectorAll('.ovcell');
+    for(var i=0;i<cells.length;i++) cells[i].classList.toggle('cur', i===cur);
+  }
+  function openOv(){
+    if(!ovBuilt) buildOv(); else markCur();
+    ov.classList.add('show'); fitOv();
+    if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+      var cells = ov.querySelectorAll('.ovcell');
+      for(var i=0;i<cells.length;i++){
+        (function(c, idx){
+          c.style.animation = 'none'; void c.offsetWidth;
+          c.style.animation = 'ovIn .4s cubic-bezier(.3,0,.2,1) both';
+          c.style.animationDelay = (idx*0.005) + 's';
+          c.addEventListener('animationend', function h(){ c.style.animation=''; c.style.animationDelay=''; c.removeEventListener('animationend',h); });
+        })(cells[i], i);
+      }
+    }
+  }
+  function closeOv(){ ov.classList.remove('show'); }
+  function toggleOv(){ ov.classList.contains('show') ? closeOv() : openOv(); }
+  document.getElementById('count').addEventListener('click', toggleOv);
+  document.getElementById('ovbtn').addEventListener('click', toggleOv);
+  ov.addEventListener('click', function(e){ if(e.target===ov) closeOv(); });
+
+  window.addEventListener('resize', function(){ fit(); if(ov.classList.contains('show')) fitOv(); });
+  (function(){
+    var b=document.getElementById('fsbtn');
+    if(b){ b.addEventListener('click', toggleFS); }
+    document.addEventListener('fullscreenchange', onFsChange);
+    document.addEventListener('webkitfullscreenchange', onFsChange);
+    window.addEventListener('orientationchange', function(){ setTimeout(function(){ fit(); if(ov.classList.contains('show')) fitOv(); }, 250); });
+    if(window.visualViewport){ window.visualViewport.addEventListener('resize', function(){ fit(); }); }
+    syncFsBtn();
+  })();
+  fit();
+
+  // 해시 시작 위치 (URL 뒤에 #3 붙이면 3번째 슬라이드로 바로 이동)
+  var h = parseInt((location.hash||'').replace('#',''),10);
+  if(h>=1 && h<=N) cur = h-1;
+  render();
+  // 힌트 자동 숨김
+  setTimeout(function(){ hint&&hint.classList.add('hide'); }, 5000);
+})();
+</script>
+</body>
+</html>
